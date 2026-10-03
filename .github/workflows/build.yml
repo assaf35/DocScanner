@@ -4,19 +4,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: unzip -q DocScanner.zip
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - name: Unzip project
+        run: |
+          shopt -s nullglob
+          ls -la
+          for z in *.zip; do unzip -q -o "$z"; done
+          PROJ=$(dirname "$(find . -name settings.gradle.kts -not -path './.git/*' | head -1)")
+          echo "Project folder: $PROJ"
+          echo "PROJ=$PROJ" >> $GITHUB_ENV
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
       - uses: android-actions/setup-android@v3
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v5
         with:
           gradle-version: "8.7"
-      - run: gradle assembleDebug --no-daemon
-        working-directory: DocScanner
+      - name: Build APK
+        run: cd "$PROJ" && gradle assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with:
           name: DocScanner-apk
-          path: DocScanner/app/build/outputs/apk/debug/app-debug.apk
+          path: "**/app/build/outputs/apk/debug/*.apk"
